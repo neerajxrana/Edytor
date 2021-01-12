@@ -9,6 +9,7 @@ def nothing():
 root = Tk()
 root.title("Edytor")
 root.geometry('700x700')
+root.iconbitmap('icons/pokeball.ico')
 
 #-------------Functions---------------------
 def select_all():
@@ -16,6 +17,7 @@ def select_all():
 
 def cut():
 	text_pad.event_generate("<<Cut>>")
+	update_line_number()
 
 def copy():
 	text_pad.event_generate("<<Copy>>")
@@ -25,9 +27,11 @@ def paste():
 
 def undo():
 	text_pad.event_generate("<<Undo>>")
+	update_line_number()
 
 def redo():
 	text_pad.event_generate("<<Redo>>")
+	update_line_number()
 
 def on_find():
 	t2 = Toplevel(root)
@@ -81,6 +85,7 @@ def open_file():
 		fh = open(filename, "r")
 		text_pad.insert(1.0, fh.read())
 		fh.close()
+	update_line_number()
 
 def save():
 	global filename
@@ -110,6 +115,7 @@ def new_file():
 	global filename
 	filename = None
 	text_pad.delete(1.0, END)
+	update_line_number()
 
 def exit_editor(event=None):
 	if filedialog.askokcancel("Quit", "Do you really want to quit?"):
@@ -120,6 +126,15 @@ def exit_editor(event=None):
 
 def about(event=None):
 	tkMessageBox.showinfo("About", "Tkinter GUI Application by neerajxrana")
+
+def update_line_number(event=None):
+	txt = ''
+	if showln.get():
+		endline, endcolumn = text_pad.index('end-lc').split('.')
+		txt = '\n'.join(map(str, range(1, int(endline))))
+	lnlabel.config(text=txt, anchor='nw')
+	currline, curcolumn = text_pad.index("insert").split('.')
+	infobar.config(text='Line: %s | Column: %s' %(currline, curcolumn))
 #------------------------------------------------
 
 #-------------Menubar----------------
@@ -148,10 +163,16 @@ editmenu.add_command(label="Select All", command=select_all, accelerator="Ctrl +
 
 viewmenu = Menu(menubar, tearoff=0)
 menubar.add_cascade(label="View", menu=viewmenu)
-viewmenu.add_command(label="Show Line Number", command=nothing)
+showln = IntVar()
+showln.set(1)
+viewmenu.add_checkbutton(label="Show Line Number", variable=showln)
 viewmenu.add_command(label="Show Info Bar at Bottom", command=nothing)
 viewmenu.add_command(label="Highlight Current Line", command=nothing)
-viewmenu.add_command(label="Themes", command=nothing)
+themesmenu = Menu(viewmenu, tearoff=0)
+theme = IntVar()
+theme.set(1)
+viewmenu.add_cascade(label="Themes", menu=themesmenu)
+themesmenu.add_radiobutton(label="Default White", variable=theme)
 
 
 aboutmenu = Menu(menubar, tearoff=0)
@@ -189,6 +210,17 @@ scroll = Scrollbar(text_pad)
 text_pad.configure(yscrollcommand=scroll.set)
 scroll.config(command=text_pad.yview)
 scroll.pack(side=RIGHT, fill=Y)
+
+infobar = Label(text_pad, text='Line: 1 | Column: 0')
+infobar.pack(expand=NO, fill=None, side=RIGHT, anchor='se')
+
+cmenu = Menu(text_pad)
+for i in ('cut', 'copy', 'paste', 'undo', 'redo'):
+	cmd = eval(i)
+	cmenu.add_command(label=i, compound=LEFT, command=cmd)
+	cmenu.add_separator()
+	cmenu.add_command(label='Select All', underline=7,
+		command=select_all)
 
 
 root.config(menu = menubar)
